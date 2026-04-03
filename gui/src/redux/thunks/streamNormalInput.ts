@@ -315,7 +315,7 @@ export const streamNormalInput = createAsyncThunk<
       return;
     }
     const generatedCalls2 = selectPendingToolCalls(state2);
-    await preprocessToolCalls(dispatch, extra.ideMessenger, generatedCalls2);
+    //await preprocessToolCalls(dispatch, extra.ideMessenger, generatedCalls2);
 
     // 3. Security check: evaluate updated policies based on args
     const state3 = getState();
