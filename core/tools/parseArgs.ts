@@ -62,18 +62,48 @@ export function coerceArgsToSchema(
   return coerced;
 }
 
+function resolveStringArgName(
+  args: any,
+  argNames: readonly string[],
+): string | undefined {
+  if (!args) {
+    return undefined;
+  }
+  for (const name of argNames) {
+    if (name in args) {
+      return name;
+    }
+  }
+  return undefined;
+}
+
+function formatMissingStringArgError(
+  argNames: readonly string[],
+  allowEmpty: boolean,
+): string {
+  const suffix = allowEmpty ? "" : " and must not be empty or whitespace-only";
+  if (argNames.length === 0) {
+    return `A string argument is required${suffix}. (type string)`;
+  }
+  if (argNames.length === 1) {
+    return `\`${argNames[0]}\` argument is required${suffix}. (type string)`;
+  }
+  return `One of ${argNames.map((n) => `\`${n}\``).join(", ")} is required${suffix}. (type string)`;
+}
+
 export function getStringArg(
   args: any,
-  argName: string,
+  argName: string | readonly string[],
   allowEmpty = false,
 ): string {
-  if (!args || !(argName in args)) {
-    throw new Error(
-      `\`${argName}\` argument is required${allowEmpty ? "" : " and must not be empty or whitespace-only"}. (type string)`,
-    );
+  const names = typeof argName === "string" ? [argName] : [...argName];
+  const resolvedName = resolveStringArgName(args, names);
+
+  if (resolvedName === undefined) {
+    throw new Error(formatMissingStringArgError(names, allowEmpty));
   }
 
-  let value = args[argName];
+  let value = args[resolvedName];
 
   // Handle case where JSON was parsed into an object by the tool call parser.
   // If the arguments to the tool call are valid JSON (e.g. the model attempts to create a .json file)
@@ -90,12 +120,14 @@ export function getStringArg(
 
   if (typeof value !== "string") {
     throw new Error(
-      `\`${argName}\` argument is required${allowEmpty ? "" : " and must not be empty or whitespace-only"}. (type string)`,
+      `\`${resolvedName}\` argument is required${allowEmpty ? "" : " and must not be empty or whitespace-only"}. (type string)`,
     );
   }
 
   if (!allowEmpty && !value.trim()) {
-    throw new Error(`Argument ${argName} must not be empty or whitespace-only`);
+    throw new Error(
+      `Argument ${resolvedName} must not be empty or whitespace-only`,
+    );
   }
 
   return value;
@@ -103,10 +135,11 @@ export function getStringArg(
 
 export function getOptionalStringArg(
   args: any,
-  argName: string,
+  argName: string | readonly string[],
   allowEmpty = false,
 ) {
-  if (typeof args?.[argName] === "undefined") {
+  const names = typeof argName === "string" ? [argName] : [...argName];
+  if (resolveStringArgName(args, names) === undefined) {
     return undefined;
   }
   return getStringArg(args, argName, allowEmpty);

@@ -101,6 +101,25 @@ describe("getStringArg", () => {
     expect(result).toBe("test");
   });
 
+  it("should use the first matching name from an array (in order)", () => {
+    expect(getStringArg({ path: "/a" }, ["filepath", "path"])).toBe("/a");
+    expect(
+      getStringArg({ filepath: "/f", path: "/a" }, ["filepath", "path"]),
+    ).toBe("/f");
+    expect(
+      getStringArg({ path: "/a", filepath: "/f" }, ["filepath", "path"]),
+    ).toBe("/f");
+  });
+
+  it("should throw when none of the alternative names are present", () => {
+    const args = { other: "x" };
+    expect(() =>
+      getStringArg(args, ["filepath", "path", "file_path"]),
+    ).toThrowError(
+      "One of `filepath`, `path`, `file_path` is required and must not be empty or whitespace-only. (type string)",
+    );
+  });
+
   it("should throw error when argument is missing", () => {
     const args = { otherArg: "test" };
     expect(() => getStringArg(args, "name")).toThrowError(

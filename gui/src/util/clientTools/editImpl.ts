@@ -8,11 +8,21 @@ export const editToolImpl: ClientToolImpl = async (
   toolCallId,
   extras,
 ) => {
-  if (!args.filepath || !args.changes) {
+  if (!args.filepath || typeof args.filepath !== "string") {
+    throw new Error("`filepath` is required to edit an existing file.");
+  }
+  if (
+    args.changes !== undefined &&
+    args.changes !== null &&
+    typeof args.changes !== "string"
+  ) {
     throw new Error(
-      "`filepath` and `changes` arguments are required to edit an existing file.",
+      "`changes` must be a string (use an empty string to clear the file).",
     );
   }
+  const changesText =
+    args.changes === undefined || args.changes === null ? "" : args.changes;
+
   let filepath = args.filepath;
   if (filepath.startsWith("./")) {
     filepath = filepath.slice(2);
@@ -40,7 +50,7 @@ export const editToolImpl: ClientToolImpl = async (
   void extras.dispatch(
     applyForEditTool({
       streamId,
-      text: args.changes,
+      text: changesText,
       toolCallId,
       filepath: firstUriMatch,
     }),
