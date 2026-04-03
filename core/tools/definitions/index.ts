@@ -1,5 +1,6 @@
 export { codebaseTool } from "./codebaseTool";
 export { createNewFileTool } from "./createNewFile";
+export { deleteFileTool } from "./deleteFile";
 export { createRuleBlock } from "./createRuleBlock";
 export { editFileTool } from "./editFile";
 export { fetchUrlContentTool } from "./fetchUrlContent";

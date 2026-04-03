@@ -27,6 +27,7 @@ function FunctionSpecificToolCallDiv({
         />
       );
     case BuiltInToolNames.EditExistingFile:
+    case BuiltInToolNames.EditFile:
       return (
         <EditFile
           relativeFilePath={processedArgs?.filepath ?? args?.filepath ?? ""}

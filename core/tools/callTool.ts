@@ -7,6 +7,7 @@ import { BuiltInToolNames } from "./builtIn";
 
 import { codebaseToolImpl } from "./implementations/codebaseTool";
 import { createNewFileImpl } from "./implementations/createNewFile";
+import { deleteFileImpl } from "./implementations/deleteFile";
 import { createRuleBlockImpl } from "./implementations/createRuleBlock";
 import { fetchUrlContentImpl } from "./implementations/fetchUrlContent";
 import { fileGlobSearchImpl } from "./implementations/globSearch";
@@ -192,6 +193,8 @@ export async function callBuiltInTool(
   switch (functionName) {
     case BuiltInToolNames.ReadFile:
       return await readFileImpl(args, extras);
+    case BuiltInToolNames.DeleteFile:
+      return await deleteFileImpl(args, extras);
     case BuiltInToolNames.ReadFileRange:
       return await readFileRangeImpl(args, extras);
     case BuiltInToolNames.CreateNewFile:

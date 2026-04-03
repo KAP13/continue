@@ -71,6 +71,7 @@ export function addToolCallDeltaToState(
 
 const editToolNames: string[] = [
   BuiltInToolNames.EditExistingFile,
+  BuiltInToolNames.EditFile,
   BuiltInToolNames.SingleFindAndReplace,
   BuiltInToolNames.MultiEdit,
 ];

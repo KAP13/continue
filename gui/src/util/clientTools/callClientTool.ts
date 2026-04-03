@@ -37,6 +37,7 @@ export async function callClientTool(
     let output: ClientToolOutput;
     switch (toolCall.function.name) {
       case BuiltInToolNames.EditExistingFile:
+      case BuiltInToolNames.EditFile:
         output = await editToolImpl(parsedArgs, toolCall.id, extras);
         break;
       case BuiltInToolNames.SingleFindAndReplace:

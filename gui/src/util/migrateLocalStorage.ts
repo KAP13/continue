@@ -11,7 +11,9 @@ const validPolicyValues: ToolPolicy[] = [
 function migrateToolPolicies(dispatch: AppDispatch) {
   const toFromMap: Record<string, string[]> = {
     [BuiltInToolNames.ReadFile]: ["builtin_read_file"],
+    [BuiltInToolNames.DeleteFile]: ["builtin_delete_file"],
     [BuiltInToolNames.EditExistingFile]: ["builtin_edit_existing_file"],
+    [BuiltInToolNames.EditFile]: ["builtin_edit_file"],
     [BuiltInToolNames.ReadCurrentlyOpenFile]: [
       "builtin_read_currently_open_file",
     ],

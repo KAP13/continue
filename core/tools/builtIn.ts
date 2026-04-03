@@ -1,7 +1,10 @@
 export enum BuiltInToolNames {
   ReadFile = "read_file",
+  DeleteFile = "delete_file",
   ReadFileRange = "read_file_range",
   EditExistingFile = "edit_existing_file",
+  /** Alias for {@link BuiltInToolNames.EditExistingFile}; same client implementation */
+  EditFile = "edit_file",
   SingleFindAndReplace = "single_find_and_replace",
   MultiEdit = "multi_edit",
   ReadCurrentlyOpenFile = "read_currently_open_file",
@@ -27,6 +30,7 @@ export const BUILT_IN_GROUP_NAME = "Built-In";
 
 export const CLIENT_TOOLS_IMPLS = [
   BuiltInToolNames.EditExistingFile,
+  BuiltInToolNames.EditFile,
   BuiltInToolNames.SingleFindAndReplace,
   BuiltInToolNames.MultiEdit,
 ];
