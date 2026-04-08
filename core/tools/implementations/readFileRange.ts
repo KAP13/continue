@@ -3,18 +3,18 @@ import { getUriPathBasename } from "../../util/uri";
 
 import { ToolImpl } from ".";
 import { throwIfFileIsSecurityConcern } from "../../indexing/ignore";
+import { ContinueError, ContinueErrorReason } from "../../util/errors";
 import { getNumberArg, getStringArg } from "../parseArgs";
 import { throwIfFileExceedsHalfOfContext } from "./readFileLimit";
-import { ContinueError, ContinueErrorReason } from "../../util/errors";
 
 // Use Int.MAX_VALUE from Java/Kotlin (2^31 - 1) instead of JavaScript's Number.MAX_SAFE_INTEGER
 // to ensure compatibility with IntelliJ's Kotlin Position type which uses Int for character field
 export const MAX_CHAR_POSITION = 2147483647;
 
 export const readFileRangeImpl: ToolImpl = async (args, extras) => {
-  const filepath = getStringArg(args, "filepath");
-  const startLine = getNumberArg(args, "startLine");
-  const endLine = getNumberArg(args, "endLine");
+  const filepath = getStringArg(args, ["filepath", "path", "file_path", "filePath", "file"]);
+  const startLine = getNumberArg(args, ["startLine", "start_line", "startLineNumber", "start_line_number"]);
+  const endLine = getNumberArg(args, ["endLine", "end_line", "endLineNumber", "end_line_number"]);
 
   // Validate that line numbers are positive integers
   if (startLine < 1) {

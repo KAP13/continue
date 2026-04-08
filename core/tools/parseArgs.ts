@@ -145,11 +145,13 @@ export function getOptionalStringArg(
   return getStringArg(args, argName, allowEmpty);
 }
 
-export function getNumberArg(args: any, argName: string): number {
-  if (!args || !(argName in args)) {
-    throw new Error(`Argument \`${argName}\` is required (type number)`);
+export function getNumberArg(args: any, argName: string | readonly string[]): number {
+  const names = typeof argName === "string" ? [argName] : [...argName];
+  const resolvedName = resolveStringArgName(args, names);
+  if (resolvedName === undefined) {
+    throw new Error(formatMissingStringArgError(names, false));
   }
-  const value = args[argName];
+  const value = args[resolvedName];
   if (typeof value === "string") {
     const parsed = parseInt(value, 10);
     if (isNaN(parsed)) {
@@ -163,24 +165,32 @@ export function getNumberArg(args: any, argName: string): number {
   return Math.floor(value); // Ensure integer for line numbers (supports negative numbers)
 }
 
-export function getBooleanArg(args: any, argName: string, required = false) {
-  if (!args || !(argName in args)) {
+export function getBooleanArg(
+  args: any,
+  argName: string | readonly string[],
+  required = false
+) {
+  const names = typeof argName === "string" ? [argName] : [...argName];
+  const resolvedName = resolveStringArgName(args, names);
+  if (resolvedName === undefined) {
     if (required) {
-      throw new Error(`Argument \`${argName}\` is required (type boolean)`);
-    } else {
-      return undefined;
+      throw new Error(formatMissingStringArgError(names, false));
     }
+    return undefined;
   }
-  if (typeof args[argName] === "string") {
-    if (args[argName].toLowerCase() === "false") {
-      return false;
-    }
-    if (args[argName].toLowerCase() === "true") {
-      return true;
-    }
+  const value = args[resolvedName];
+  if (typeof value === "string") {
+    const lower = value.toLowerCase();
+    if (lower === "false") return false;
+    if (lower === "true") return true;
+    throw new Error(
+      `Argument \`${resolvedName}\` must be a boolean (true/false) string or boolean`
+    );
   }
-  if (typeof args[argName] !== "boolean") {
-    throw new Error(`Argument \`${argName}\` must be a boolean true or false`);
+  if (typeof value !== "boolean") {
+    throw new Error(
+      `Argument \`${resolvedName}\` must be a boolean (true/false) string or boolean`
+    );
   }
-  return args[argName];
+  return value;
 }
