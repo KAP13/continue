@@ -83,6 +83,7 @@ class MessageTypes {
             "config/addModel",
             "config/newPromptFile",
             "config/newAssistantFile",
+            "config/openTerminalYaml",
             "config/ideSettingsUpdate",
             "config/addLocalWorkspaceBlock",
             "config/addGlobalRule",

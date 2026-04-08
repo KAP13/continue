@@ -52,6 +52,7 @@ import { ConfigYaml } from "@continuedev/config-yaml";
 import { getDiffFn, GitDiffCache } from "./autocomplete/snippets/gitDiffCache";
 import { stringifyMcpPrompt } from "./commands/slash/mcpSlashCommand";
 import { createNewAssistantFile } from "./config/createNewAssistantFile";
+import { openWorkspaceTerminalYaml } from "./config/openWorkspaceTerminalYaml";
 import {
   isColocatedRulesFile,
   isContinueAgentConfigFile,
@@ -419,6 +420,10 @@ export class Core {
       await this.configHandler.refreshAll(
         "Assistant file created (config/newAssistantFile message)",
       );
+    });
+
+    on("config/openTerminalYaml", async () => {
+      await openWorkspaceTerminalYaml(this.ide);
     });
 
     on("config/addLocalWorkspaceBlock", async (msg) => {

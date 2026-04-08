@@ -100,6 +100,7 @@ export type ToCoreFromIdeOrWebviewProtocol = {
   "config/deleteRule": [{ filepath: string }, void];
   "config/newPromptFile": [undefined, void];
   "config/newAssistantFile": [undefined, void];
+  "config/openTerminalYaml": [undefined, void];
   "config/ideSettingsUpdate": [IdeSettings, void];
   "config/getSerializedProfileInfo": [
     undefined,

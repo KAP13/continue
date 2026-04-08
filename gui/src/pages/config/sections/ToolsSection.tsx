@@ -32,6 +32,7 @@ import { useAppDispatch, useAppSelector } from "../../../redux/hooks";
 import { updateConfig } from "../../../redux/slices/configSlice";
 import { selectCurrentOrg } from "../../../redux/slices/profilesSlice";
 import { ConfigHeader } from "../components/ConfigHeader";
+import { ConfigRow } from "../components/ConfigRow";
 import { ToolPoliciesGroup } from "../components/ToolPoliciesGroup";
 
 interface MCPServerStatusProps {
@@ -470,6 +471,15 @@ export function ToolsSection() {
     return mode === "chat";
   }, [mode]);
 
+  function handleOpenTerminalYaml() {
+    void ideMessenger.request("config/openTerminalYaml", undefined).catch((e) => {
+      ideMessenger.post("showToast", [
+        "error",
+        e instanceof Error ? e.message : String(e),
+      ]);
+    });
+  }
+
   const availableToolsMessage =
     mode === "chat"
       ? "All tools disabled in Chat, switch to Plan or Agent mode to use tools"
@@ -499,6 +509,14 @@ export function ToolsSection() {
           allToolsOff={allToolsOff}
           duplicateDetection={duplicateDetection}
         />
+        <Card>
+          <ConfigRow
+            title="Terminal command substitutions"
+            description="Open .continue/terminal.yaml to map commands with regexp rules before they run in the terminal tool."
+            onClick={handleOpenTerminalYaml}
+            icon={CommandLineIcon}
+          />
+        </Card>
         <ConfigHeader
           className="pr-2"
           title="MCP Servers"

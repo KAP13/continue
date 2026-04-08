@@ -15,7 +15,7 @@ export const createNewFileImpl: ToolImpl = async (args, extras) => {
   ]);
   const contents = getStringArg(
     args,
-    ["contents", "content", "file_content", "fileContent", "filecontent"],
+    ["contents", "content", "file_content", "fileContent", "filecontent", "changes"],
     true,
   );
 

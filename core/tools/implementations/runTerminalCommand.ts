@@ -46,6 +46,10 @@ import {
   updateProcessOutput,
 } from "../../util/processTerminalStates";
 import { getBooleanArg, getStringArg } from "../parseArgs";
+import {
+  applyTerminalCommandSubstitutions,
+  loadTerminalSubstitutionRules,
+} from "../../util/terminalCommandSubstitutions";
 
 /**
  * Resolves the working directory from workspace dirs.
@@ -107,7 +111,9 @@ const getColorEnv = () => ({
 const LOCAL_ONLY = ["", "local"];
 
 export const runTerminalCommandImpl: ToolImpl = async (args, extras) => {
-  const command = getStringArg(args, "command");
+  let command = getStringArg(args, "command");
+  const substitutionRules = await loadTerminalSubstitutionRules(extras.ide);
+  command = applyTerminalCommandSubstitutions(command, substitutionRules);
   // Default to waiting for completion if not specified
   const waitForCompletion =
     getBooleanArg(args, "waitForCompletion", false) ?? true;
