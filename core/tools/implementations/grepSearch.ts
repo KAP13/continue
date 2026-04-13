@@ -40,7 +40,7 @@ function splitGrepResultsByFile(content: string): ContextItem[] {
 }
 
 export const grepSearchImpl: ToolImpl = async (args, extras) => {
-  const rawQuery = getStringArg(args, "query");
+  const rawQuery = getStringArg(args, ["query", "pattern"]);
 
   const { query, warning } = prepareQueryForRipgrep(rawQuery);
 
