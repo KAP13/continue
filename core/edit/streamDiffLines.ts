@@ -18,11 +18,18 @@ import {
   stopAtLines,
 } from "../autocomplete/filtering/streamTransforms/lineStream";
 import { streamDiff } from "../diff/streamDiff";
-import { streamLines } from "../diff/util";
+import { generateLines, LineStream, streamLines } from "../diff/util";
+import {
+  applyLineRangePatch,
+  isLineRangePatchFormat,
+  looksLikeContinueLinePatchJson,
+  stripOptionalMarkdownFencedCode,
+} from "./lazy/lineRangePatch";
 import { getSystemMessageWithRules } from "../llm/rules/getSystemMessageWithRules";
 import { gptEditPrompt } from "../llm/templates/edit";
 import { defaultApplyPrompt } from "../llm/templates/edit/gpt";
 import { findLast } from "../util/findLast";
+import { renderChatMessage } from "../util/messageContent";
 import { Telemetry } from "../util/posthog";
 import { recursiveStream } from "./recursiveStream";
 
@@ -173,27 +180,80 @@ export async function* streamDiffLines(
     prediction,
   );
 
-  let lines = streamLines(completion);
-
-  lines = filterEnglishLinesAtStart(lines);
-  lines = filterCodeBlockLines(lines);
-  lines = stopAtLines(lines, () => {});
-  lines = skipLines(lines);
-  lines = removeTrailingWhitespace(lines);
-  if (inept) {
-    // lines = fixCodeLlamaFirstLineIndentation(lines);
-    lines = filterEnglishLinesAtEnd(lines);
+  async function* applyLineStreamFilters(
+    lines: LineStream,
+  ): AsyncGenerator<DiffLine> {
+    let filtered = filterEnglishLinesAtStart(lines);
+    filtered = filterCodeBlockLines(filtered);
+    filtered = stopAtLines(filtered, () => {});
+    filtered = skipLines(filtered);
+    filtered = removeTrailingWhitespace(filtered);
+    if (inept) {
+      filtered = filterEnglishLinesAtEnd(filtered);
+    }
+    let diffLines = streamDiff(oldLines, filtered);
+    diffLines = filterLeadingAndTrailingNewLineInsertion(diffLines);
+    if (highlighted.length === 0) {
+      const line = prefix.split("\n").slice(-1)[0];
+      const indentation = line.slice(0, line.length - line.trimStart().length);
+      diffLines = addIndentation(diffLines, indentation);
+    }
+    for await (const diffLine of diffLines) {
+      yield diffLine;
+    }
   }
 
-  let diffLines = streamDiff(oldLines, lines);
-  diffLines = filterLeadingAndTrailingNewLineInsertion(diffLines);
-  if (highlighted.length === 0) {
-    const line = prefix.split("\n").slice(-1)[0];
-    const indentation = line.slice(0, line.length - line.trimStart().length);
-    diffLines = addIndentation(diffLines, indentation);
+  async function* linesFromBufferedString(s: string): LineStream {
+    const body = stripOptionalMarkdownFencedCode(s);
+    for (const line of body.split("\n")) {
+      yield line;
+    }
   }
 
-  for await (const diffLine of diffLines) {
-    yield diffLine;
+  /**
+   * Chat Apply and Edit merge both use the same completion shape; continue-line-patch
+   * must be handled for `edit` as well, otherwise JSON lines are diffed as replacement code.
+   */
+  async function* mergeFromBufferedModelOutput(
+    raw: string,
+  ): AsyncGenerator<DiffLine> {
+    const candidate = stripOptionalMarkdownFencedCode(raw);
+    if (isLineRangePatchFormat(candidate)) {
+      try {
+        const patchDiffLines = applyLineRangePatch(highlighted, candidate);
+        let patchGen = filterLeadingAndTrailingNewLineInsertion(
+          generateLines(patchDiffLines),
+        );
+        if (highlighted.length === 0) {
+          const line = prefix.split("\n").slice(-1)[0];
+          const indentation = line.slice(
+            0,
+            line.length - line.trimStart().length,
+          );
+          patchGen = addIndentation(patchGen, indentation);
+        }
+        for await (const diffLine of patchGen) {
+          yield diffLine;
+        }
+        return;
+      } catch (e) {
+        console.error("Merge: line-range patch failed", e);
+        throw e;
+      }
+    }
+
+    if (looksLikeContinueLinePatchJson(candidate)) {
+      throw new Error(
+        "Model output looks like continue-line-patch JSON but is invalid or incomplete. Fix the JSON or switch to full-code output.",
+      );
+    }
+
+    yield* applyLineStreamFilters(linesFromBufferedString(raw));
   }
+
+  let raw = "";
+  for await (const chunk of completion) {
+    raw += typeof chunk === "string" ? chunk : renderChatMessage(chunk);
+  }
+  yield* mergeFromBufferedModelOutput(raw);
 }

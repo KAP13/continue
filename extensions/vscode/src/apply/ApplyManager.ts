@@ -7,6 +7,12 @@ import { ApplyToFilePayload } from "core";
 import { myersDiff } from "core/diff/myers";
 import { generateLines } from "core/diff/util";
 import { ApplyAbortManager } from "core/edit/applyAbortManager";
+import {
+  applyLineRangePatch,
+  isLineRangePatchFormat,
+  looksLikeContinueLinePatchJson,
+  stripOptionalMarkdownFencedCode,
+} from "core/edit/lazy/lineRangePatch";
 import { streamDiffLines } from "core/edit/streamDiffLines";
 import { pruneLinesFromBottom, pruneLinesFromTop } from "core/llm/countTokens";
 import { getMarkdownLanguageTagForFile } from "core/util";
@@ -55,6 +61,35 @@ export class ApplyManager {
 
     const hasExistingDocument = !!activeTextEditor.document.getText().trim();
     if (hasExistingDocument) {
+      const patchCandidate = stripOptionalMarkdownFencedCode(text);
+      if (isLineRangePatchFormat(patchCandidate)) {
+        try {
+          const diffLines = applyLineRangePatch(
+            originalFileContent,
+            patchCandidate,
+          );
+          await this.verticalDiffManager.streamDiffLines(
+            generateLines(diffLines),
+            true,
+            streamId,
+            toolCallId,
+          );
+          return;
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          void vscode.window.showErrorMessage(
+            `Continue line patch failed: ${msg}`,
+          );
+          return;
+        }
+      }
+      if (looksLikeContinueLinePatchJson(patchCandidate)) {
+        void vscode.window.showErrorMessage(
+          "Continue line patch JSON looks invalid. Fix it and try Apply again.",
+        );
+        return;
+      }
+
       // Currently `isSearchAndReplace` will always provide a full file rewrite
       // as the contents of `text`, so we can just instantly apply
       if (isSearchAndReplace) {

@@ -3,6 +3,12 @@ import { generateLines } from "../../diff/util";
 import { supportedLanguages } from "../../util/treeSitter";
 import { getUriFileExtension } from "../../util/uri";
 import { deterministicApplyLazyEdit } from "./deterministic";
+import {
+  applyLineRangePatch,
+  isLineRangePatchFormat,
+  looksLikeContinueLinePatchJson,
+  stripOptionalMarkdownFencedCode,
+} from "./lineRangePatch";
 import { streamLazyApply } from "./streamLazyApply";
 import { applyUnifiedDiff, isUnifiedDiffFormat } from "./unifiedDiffApply";
 
@@ -21,6 +27,43 @@ export async function applyCodeBlock(
   isInstantApply: boolean;
   diffLinesGenerator: AsyncGenerator<DiffLine>;
 }> {
+  const linePatchCandidate = stripOptionalMarkdownFencedCode(newLazyFile);
+
+  // Before tree-sitter "full file rewrite": JSON / diff payloads are not source code.
+  if (isLineRangePatchFormat(linePatchCandidate)) {
+    try {
+      const diffLines = applyLineRangePatch(oldFile, linePatchCandidate);
+      return {
+        isInstantApply: true,
+        diffLinesGenerator: generateLines(diffLines),
+      };
+    } catch (e) {
+      console.error("Failed to apply line-range patch", e);
+      const msg =
+        e instanceof Error ? e.message : "Failed to apply line-range patch";
+      throw new Error(msg);
+    }
+  }
+
+  if (looksLikeContinueLinePatchJson(linePatchCandidate)) {
+    throw new Error(
+      "Content looks like continue-line-patch JSON but is invalid or incomplete. Fix the JSON and try Apply again.",
+    );
+  }
+
+  const unifiedCandidate = stripOptionalMarkdownFencedCode(newLazyFile);
+  if (isUnifiedDiffFormat(unifiedCandidate)) {
+    try {
+      const diffLines = applyUnifiedDiff(oldFile, unifiedCandidate);
+      return {
+        isInstantApply: true,
+        diffLinesGenerator: generateLines(diffLines!),
+      };
+    } catch (e) {
+      console.error("Failed to apply unified diff", e);
+    }
+  }
+
   if (canUseInstantApply(filename)) {
     const diffLines = await deterministicApplyLazyEdit({
       oldFile,
@@ -34,19 +77,6 @@ export async function applyCodeBlock(
         isInstantApply: true,
         diffLinesGenerator: generateLines(diffLines!),
       };
-    }
-  }
-
-  // If the code block is a diff
-  if (isUnifiedDiffFormat(newLazyFile)) {
-    try {
-      const diffLines = applyUnifiedDiff(oldFile, newLazyFile);
-      return {
-        isInstantApply: true,
-        diffLinesGenerator: generateLines(diffLines!),
-      };
-    } catch (e) {
-      console.error("Failed to apply unified diff", e);
     }
   }
 

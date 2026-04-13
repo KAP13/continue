@@ -90,7 +90,14 @@ export const defaultApplyPrompt: PromptTemplateFunction = (
         ${otherData.new_code}
         \`\`\`
 
-        Apply the SUGGESTED EDIT to the ORIGINAL CODE. Output the complete modified file.
+        Apply the SUGGESTED EDIT to the ORIGINAL CODE. Prefer this order:
+
+        **Preferred (use whenever practical):** Output a single JSON object that includes \`"continue-line-patch": 1\` (numeric one) and a \`replacements\` array. Do not use a separate \`version\` field for this.
+        - startLine/endLine are 1-based line numbers inclusive, counting only lines within the ORIGINAL CODE block above.
+        - Each replacement has "lines" (string array) as the new text; optionally include "oldLines" to match the exact span being replaced.
+        - Do not overlap replacement ranges. Output only the JSON (optionally wrapped in a markdown code fence), no explanation.
+
+        **Fallback:** Only if a line-range patch is impractical (e.g. you cannot express the change as non-overlapping replacements), output the complete modified file as plain code instead.
         - Output ONLY code. Do NOT explain, summarize, or describe changes.
         - Leave existing comments in place unless changes require modifying them.
         - Preserve all unchanged code exactly as-is.`,
